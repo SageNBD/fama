@@ -5,32 +5,41 @@ import datetime
 asset = 'itau'
 date = datetime.datetime(2016, 1, 1)
 
-prefix = f"https://www.google.com/search?q={asset}&tbs=cdr%3A1"
-start = f"%2Ccd_min%3A{date.month}%2F{date.day}%2F{date.year}"
-end = f"%2Ccd_max%3A{date.month}%2F{date.day}%2F{date.year}&tbm=nws"
-url = prefix + start + end
+url = (
+        f"https://www.google.com/search?q={asset}&tbs=cdr%3A1"
+        f"%2Ccd_min%3A{date.month}%2F{date.day}%2F{date.year}"
+        f"%2Ccd_max%3A{date.month}%2F{date.day}%2F{date.year}&tbm=nws"
+      )
 
-source = requests.get(url)
+agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0'
+header = { 'User-Agent': agent }
+source = requests.get(url, headers=header)
 
-soup = BeautifulSoup(source.text, "lxml")
-print(soup.prettify())
-noticias = soup.find_all("div", {"class": "g"})
+soup = BeautifulSoup(source.content, "lxml")
+
+#noticias = soup.find_all("div", {"class": "g"})
+noticias = soup.find_all("div", {"class": "hI5pFf"})
+
 print(f"num_noticias = {len(noticias)}")
-print(f"noticias = {noticias}")
+#print(f"noticias = {noticias}")
 
 data = []
 
 for noticia in noticias:
     news_data = {}
 
-    headline = noticia.find("a", {"class": "l lLrAF"}).text 
-    source = noticia.find("span", {"class": "xQ82C e8fRJf"}).text 
-    body = noticia.find("div", {"class": "st"}).text
+    #headline = noticia.find("a", {"class": "l lLrAF"}).text 
+    headline = noticia.find("div", {"class": "JheGif jBgGLd"}).text
+
+    #source = noticia.find("span", {"class": "xQ82C e8fRJf"}).text 
+    source = noticia.find("div", {"class": "XTjFC WF4CUc"}).text
+
+    #body = noticia.find("div", {"class": "st"}).text
+    body = noticia.find("div", {"class": "Y3v8qd"}).text
 
     news_data['headline'] = headline
     news_data['source'] = source
     news_data['body'] = body
-    news_data['page'] = page_num
 
     data.append(news_data)
 

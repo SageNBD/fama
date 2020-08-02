@@ -14,6 +14,9 @@ class Scraper:
         tools = driver.find_element_by_id("hdtb-tls")
         tools.click()
 
+        self.agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0'
+        self.header = { 'User-Agent': self.agent }
+
     def reset(self):
         self.page_sources = []
 
@@ -65,11 +68,32 @@ class Scraper:
         #     time.sleep(1.0)
         #     self.page_sources.append(driver.page_source)
 
-    def scrape_requests(self, driver, asset, date): 
-        prefix = f"https://www.google.com/search?q={asset}&tbs=cdr%3A1"
-        start = f"%2Ccd_min%3A{date.month}%2F{date.day}%2F{date.year}"
-        end = f"%2Ccd_max%3A{date.moth}%2F{date.day}%2F{date.year}&tbm=nws"
-        url = prefix + start + end
+    def scrape_requests(self, asset, date): 
+        url = (
+                f"https://www.google.com/search?q={asset}&tbs=cdr%3A1"
+                f"%2Ccd_min%3A{date.month}%2F{date.day}%2F{date.year}"
+                f"%2Ccd_max%3A{date.month}%2F{date.day}%2F{date.year}&tbm=nws"
+              )
+
+        source = requests.get(url, headers=self.header)
+        soup = BeautifulSoup(source.content, "lxml")
+        
+        noticias = soup.find_all("div", {"class": "hI5pFf"})
+
+        data = []
+        for noticia in noticias:
+            news_data = {}
+
+            headline = noticia.find("div", {"class": "JheGif jBgGLd"}).text
+            source = noticia.find("div", {"class": "XTjFC WF4CUc"}).text
+            body = noticia.find("div", {"class": "Y3v8qd"}).text
+
+            news_data['headline'] = headline
+            news_data['source'] = source
+            news_data['body'] = body
+
+            data.append(news_data)
+        return data
 
     def extract_headlines(self):
         data = []
@@ -168,6 +192,7 @@ today = datetime.datetime(2015, 12, 31) # Mudar a janela de tempo
 assets = ['itau', 'ambev', 'petrobras']
 #assets = ['itau']
 
+"""
 start_time = time.time()
 for i in range(2):
     today += datetime.timedelta(days=1)
@@ -197,6 +222,27 @@ for i in range(2):
             with open(f"dados/{asset_dir_name}/{today.strftime('%d_%m')}_en.txt", "w") as f:
                 f.write(f"{headline}\n{body}\n\n")
         scraper.reset()
+
+end_time = time.time()
+"""
+
+start_time = time.time()
+for i in range(31):
+    today += datetime.timedelta(days=1)
+    
+    print(f"\t{today.strftime('%d/%m/%Y')}")
+    for asset in assets:
+        data = scraper.scrape_requests(asset, today)
+
+        if not data: # Lista vazia. Não há notícias para traduzir
+            continue
+
+        for d in data:
+            if asset not in d['headline'].lower(): # Nome do ativo não está na manchete
+                headline, body = translator.translate("", d['body'])
+            else:
+                headline, body = translator.translate(d['headline'], d['body'])
+            print(headline, body)
 
 end_time = time.time()
 print(f"Execução demorou {end_time - start_time}s")
