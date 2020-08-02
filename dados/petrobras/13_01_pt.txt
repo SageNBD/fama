@@ -1,0 +1,50 @@
+headline: Lula indicou WTorre para obra de prédio alugado pela ...
+source: Revista Época Negócios
+body: O Centro Empresarial Senado Petrobrás abriga 10 mil funcionários da área administrativa. A obra - de 115 mil metros quadrados de área construída e 95 mil ...
+page: 0
+
+headline: Justiça do Rio condena ex-diretor da Petrobras por fraude em ...
+source: Revista Época
+body: Zelada e João Augusto estão presos em Curitiba (PR), acusados de fazer parte do esquema de corrupção na Petrobras desvendado pela Operação Lava Jato.A ...
+page: 0
+
+headline: Petrobras coloca à venda sua fatia na Braskem, afirma jornal
+source: Revista Época Negócios
+body: A Petrobras possui uma participação de 36% na petroquímica, que estaria avaliada em R$ 5,8 bilhões. 1 min de leitura ...
+page: 0
+
+headline: Petrobras trabalha com estimativa irreal para o petróleo, diz ...
+source: Revista Época Negócios
+body: Petrobras trabalha com estimativa irreal para o petróleo, diz ex-diretor da ANP. Para ele, a premissa de que o barril do petróleo fechará o ano com cotação média ...
+page: 0
+
+headline: PSDB quer incluir delação de Cerveró em ação contra Dilma ...
+source: Correio do Estado
+body: O ex-diretor da Petrobras afirmou que ouviu do senador Fernando Collor de Mello (PTB-AL) que a presidente Dilma havia colocado todas as presidências da ...
+page: 0
+
+headline: Baixa popularidade não é motivo para impeachment, diz ...
+source: Bondenews
+body: Cerveró, ex-diretor da área Internacional da Petrobras, declarou à Procuradoria-Geral da República ter ouvido do senador Fernando Collor (PTB-AL) menção à ...
+page: 0
+
+headline: Baixa do petroleo põe em xeque 'plano pré-sal' para o Brasil
+source: Globo.com
+body: A Petrobras diz que conseguiu alcançar um custo de extração no pré-sal da ordem de US$ 8 o barril, o que mantém a extração como vantajosa. Walter de Vitto ...
+page: 0
+
+headline: Ex-diretor da UTC revela detalhes sobre pagamentos a políticos
+source: Globo.com
+body: ... o dinheiro seria uma garantia de que Julio Delgado "aliviaria" eventual ação da CPI mista da Petrobras contra Pessoa – Delgado era integrante da comissão.
+page: 0
+
+headline: FHC rebate Cerveró e diz que compra de empresa da ...
+source: 180graus.com
+body: O ex-presidente FHC (PSDB) rebateu as declarações do ex-diretor da Petrobras Nestor Cerveró na Lava Jato, em uma tentativa de encerrar uma nova ...
+page: 0
+
+headline: Petrobras Forecasts Cuts; Bond Prices Plummet
+source: Folha de S.Paulo
+body: Petrobras announced on Tuesday (12) a cut of US$ 32 billion in its investment budget for the 2015-2019 period - which went down to US$ 98.4 billion.
+page: 0
+
