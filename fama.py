@@ -2,14 +2,18 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
 from bs4 import BeautifulSoup
+from pymongo import MongoClient
+from bson.objectid import ObjectId
 import datetime
 import time
 import requests
+import subprocess
 
 class Scraper:
 
     def __init__(self, driver):
         self.page_sources = []
+
         driver.get(f"https://google.com/search?q=quantamental&source=lnms&tbm=nws")
         tools = driver.find_element_by_id("hdtb-tls")
         tools.click()
@@ -91,26 +95,37 @@ class Scraper:
             news_data['headline'] = headline
             news_data['source'] = source
             news_data['body'] = body
+            news_data['date'] = date.strftime('%d/%m/%y')
+            print(news_data)
 
             data.append(news_data)
         return data
 
-    def extract_headlines(self):
+    def extract_headlines(self, today):
         data = []
         for page_num, page_source in enumerate(self.page_sources):
             soup = BeautifulSoup(page_source, 'lxml')
-            noticias = soup.find_all("div", {"class": "g"})
+
+            #noticias = soup.find_all("div", {"class": "g"})
+            noticias = soup.find_all("div", {"class": "hI5pFf"})
             for noticia in noticias:
                 news_data = {}
-
+            
+                """
                 headline = noticia.find("a", {"class": "l lLrAF"}).text 
                 source = noticia.find("span", {"class": "xQ82C e8fRJf"}).text 
                 body = noticia.find("div", {"class": "st"}).text
+                """
+
+                headline = noticia.find("div", {"class": "JheGif jBgGLd"}).text
+                source = noticia.find("div", {"class": "XTjFC WF4CUc"}).text
+                body = noticia.find("div", {"class": "Y3v8qd"}).text
 
                 news_data['headline'] = headline
                 news_data['source'] = source
                 news_data['body'] = body
                 news_data['page'] = page_num
+                news_data['date'] = today.strftime("%d/%m/%y")
 
                 data.append(news_data)
         return data
@@ -126,7 +141,7 @@ class Translator():
         time.sleep(1.0)
 
         self.text_input = None
-        while not self.text_input: # Espera a página carregar
+        while not self.text_input: # Espera o elmento da página carregar
             try:
                 self.text_input = driver.find_element_by_id("source")
             except NoSuchElementException:
@@ -140,15 +155,15 @@ class Translator():
         self.ingles = self.right_panel.find_element_by_id("sugg-item-en")
         self.ingles.click()
 
-    def translate(self, headline, body):
+    def translate(self, news_data):
         # Ir para a tab do Google Tradutor.
         # window_handles = [<Google_News>, <Google_Tradutor>]
         driver.switch_to.window(driver.window_handles[1])
 
-        if headline:
-            print(f"headline = {headline}", end='')
+        if news_data['headline']:
+            print(f"headline = {news_data['headline']}", end='')
             # Translate headline text
-            self.text_input.send_keys(headline)
+            self.text_input.send_keys(news_data['headline'])
             time.sleep(1.5)
 
             text_output = None
@@ -157,75 +172,82 @@ class Translator():
                     text_output = driver.find_elements_by_class_name("translation")[0]
                 except NoSuchElementException:
                     time.sleep(1.0)
-            headline = text_output.find_element_by_tag_name("span").text
+                except IndexError:
+                    time.sleep(1.0)
+            news_data['headline'] = text_output.find_element_by_tag_name("span").text
             self.text_input.clear()
 
         # Translate body text
-        self.text_input.send_keys(body)
+        self.text_input.send_keys(news_data['body'])
         time.sleep(1.5)
-        print(f"body = {body}")
+        print(f"body = {news_data['body']}")
 
         text_output = None
         while not text_output:
             try:
                 text_output = driver.find_elements_by_class_name("translation")[0]
-                body = text_output.find_element_by_tag_name("span").text
+                news_data['body'] = text_output.find_element_by_tag_name("span").text
             except NoSuchElementException:
                 time.sleep(1.0)
             except IndexError:
-                return (headline, "")
+                break
         self.text_input.clear()
+    
+    def translate_by_CLI(self, headline, body):
+        if headline: # Transforma pra string e retira o '\n'
+            output = subprocess.check_output(['trans', '-b', headline])
+            headline = output.decode('utf-8').split() 
+
+        output = subprocess.check_output(['trans', '-b', body])
 
         return (headline, body)
-
-class MarketData:
-
-    def __init__(self, date, asset):
-        self.df = yf.download(asset, period="1d", interval="5m")
-
+        
+# Class Setup
 driver = webdriver.Firefox()
 scraper = Scraper(driver)
 translator = Translator(driver)
 
-today = datetime.datetime(2015, 12, 31) # Mudar a janela de tempo
+# MongoDB Setup
+client = MongoClient('localhost', 27017)
+db = client.fama_test
+news = db.test_collection
 
 assets = ['itau', 'ambev', 'petrobras']
-#assets = ['itau']
 
-"""
+today = datetime.datetime(2015, 12, 31) # Mudar a janela de tempo
 start_time = time.time()
-for i in range(2):
+for i in range(1):
     today += datetime.timedelta(days=1)
     
     print(f"\t{today.strftime('%d/%m/%Y')}")
-    scraper.set_date(today.strftime('%m/%d/%Y'))
+    #scraper.set_date(today.strftime('%m/%d/%Y'))
     for asset in assets:
         print("\t" + asset)
-        scraper.scrape(driver, asset, today.strftime('%m/%d/%Y'))
-        data = scraper.extract_headlines()
 
-        asset_dir_name = '_'.join(asset.split())
-        with open(f"dados/{asset_dir_name}/{today.strftime('%d_%m')}_pt.txt", "w") as f:
-            for d in data:
-                for key, val in d.items():
-                    f.write(f"{key}: {val}\n")
-                f.write("\n")
+        """
+        scraper.scrape(driver, asset, today.strftime('%m/%d/%Y'))
+        data = scraper.extract_headlines(today)
+        """
+        data = scraper.scrape_requests(asset, today)
 
         if not data: # Lista vazia. Não há notícias para traduzir
+            print('didnt find any data')
             continue
 
         for d in data:
             if asset not in d['headline'].lower(): # Nome do ativo não está na manchete
-                headline, body = translator.translate("", d['body'])
+                translator.translate(d)
             else:
-                headline, body = translator.translate(d['headline'], d['body'])
-            with open(f"dados/{asset_dir_name}/{today.strftime('%d_%m')}_en.txt", "w") as f:
-                f.write(f"{headline}\n{body}\n\n")
-        scraper.reset()
+                translator.translate(d)
+
+        news.insert_many(data)
 
 end_time = time.time()
-"""
 
+for doc in db.test_collection.find({}):
+    print(doc)
+
+"""
 start_time = time.time()
 for i in range(31):
     today += datetime.timedelta(days=1)
@@ -239,11 +261,12 @@ for i in range(31):
 
         for d in data:
             if asset not in d['headline'].lower(): # Nome do ativo não está na manchete
-                headline, body = translator.translate("", d['body'])
+                headline, body = translator.translate_by_CLI("", d['body'])
             else:
-                headline, body = translator.translate(d['headline'], d['body'])
+                headline, body = translator.translate_by_CLI(d['headline'], d['body'])
             print(headline, body)
 
 end_time = time.time()
 print(f"Execução demorou {end_time - start_time}s")
+"""
 
