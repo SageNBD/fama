@@ -1,6 +1,7 @@
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import StaleElementReferenceException
 from bs4 import BeautifulSoup
 from pymongo import MongoClient
 from bson.objectid import ObjectId
@@ -11,12 +12,14 @@ import subprocess
 
 class Scraper:
 
-    def __init__(self, driver):
+    def __init__(self):
         self.page_sources = []
 
+        """
         driver.get(f"https://google.com/search?q=quantamental&source=lnms&tbm=nws")
         tools = driver.find_element_by_id("hdtb-tls")
         tools.click()
+        """
 
         self.agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0'
         self.header = { 'User-Agent': self.agent }
@@ -95,8 +98,8 @@ class Scraper:
             news_data['headline'] = headline
             news_data['source'] = source
             news_data['body'] = body
+            news_data['asset'] = asset
             news_data['date'] = date.strftime('%d/%m/%y')
-            print(news_data)
 
             data.append(news_data)
         return data
@@ -133,11 +136,15 @@ class Scraper:
 class Translator():
 
     def __init__(self, driver):
+        """
         driver.execute_script('''
             window.open('https://translate.google.com/?hl=pt-BR', '_blank')
             '''
         )
         driver.switch_to.window(driver.window_handles[1])
+        """
+
+        driver.get('https://translate.google.com/?hl=pt-BR')
         time.sleep(1.0)
 
         self.text_input = None
@@ -158,10 +165,9 @@ class Translator():
     def translate(self, news_data):
         # Ir para a tab do Google Tradutor.
         # window_handles = [<Google_News>, <Google_Tradutor>]
-        driver.switch_to.window(driver.window_handles[1])
+        #driver.switch_to.window(driver.window_handles[1])
 
         if news_data['headline']:
-            print(f"headline = {news_data['headline']}", end='')
             # Translate headline text
             self.text_input.send_keys(news_data['headline'])
             time.sleep(1.5)
@@ -174,13 +180,20 @@ class Translator():
                     time.sleep(1.0)
                 except IndexError:
                     time.sleep(1.0)
-            news_data['headline'] = text_output.find_element_by_tag_name("span").text
+                except:
+                    break
+            try:
+                news_data['headline'] = text_output.find_element_by_tag_name("span").text
+            except NoSuchElementException:
+                news_data['headline'] = ''
+            except: 
+                news_data['headline'] = ''
+
             self.text_input.clear()
 
         # Translate body text
         self.text_input.send_keys(news_data['body'])
         time.sleep(1.5)
-        print(f"body = {news_data['body']}")
 
         text_output = None
         while not text_output:
@@ -189,7 +202,11 @@ class Translator():
                 news_data['body'] = text_output.find_element_by_tag_name("span").text
             except NoSuchElementException:
                 time.sleep(1.0)
+            except StaleElementReferenceException:
+                break
             except IndexError:
+                break
+            except:
                 break
         self.text_input.clear()
     
@@ -204,26 +221,35 @@ class Translator():
         
 # Class Setup
 driver = webdriver.Firefox()
-scraper = Scraper(driver)
+scraper = Scraper()
 translator = Translator(driver)
 
 # MongoDB Setup
 client = MongoClient('localhost', 27017)
-db = client.fama_test
-news = db.test_collection
+db = client.fama
 
+# news = db.test_collection
 assets = ['itau', 'ambev', 'petrobras']
 
-today = datetime.datetime(2015, 12, 31) # Mudar a janela de tempo
+asset_collection = {} # Create collection for each asset
+for asset in assets:
+    asset_collection[asset] = db[asset]
+
+today = datetime.datetime(2019, 4, 9) # Mudar a janela de tempo
+#end_date = datetime.datetime(2018, 7, 17)
+end_date = datetime.datetime(2020, 1, 1)
+total_days = (end_date - today).days
+
 start_time = time.time()
-for i in range(1):
-    today += datetime.timedelta(days=1)
-    
-    print(f"\t{today.strftime('%d/%m/%Y')}")
+for i in range(total_days):
+    days_left = (end_date - today).days
+    progress = ((i + 1) / (total_days * 1.0)) * 100
+
+    print(f"Today is {today.strftime('%d/%m/%Y')}. There are {days_left} days left")
+    print(f"Progress: {progress}%")
+
     #scraper.set_date(today.strftime('%m/%d/%Y'))
     for asset in assets:
-        print("\t" + asset)
-
         """
         scraper.scrape(driver, asset, today.strftime('%m/%d/%Y'))
         data = scraper.extract_headlines(today)
@@ -234,39 +260,14 @@ for i in range(1):
             print('didnt find any data')
             continue
 
-        for d in data:
-            if asset not in d['headline'].lower(): # Nome do ativo não está na manchete
-                translator.translate(d)
-            else:
-                translator.translate(d)
+        for d in data: # Traduz a manchete
+            translator.translate(d)
 
-        news.insert_many(data)
+        asset_collection[asset].insert_many(data)
 
-end_time = time.time()
-
-for doc in db.test_collection.find({}):
-    print(doc)
-
-"""
-start_time = time.time()
-for i in range(31):
     today += datetime.timedelta(days=1)
-    
-    print(f"\t{today.strftime('%d/%m/%Y')}")
-    for asset in assets:
-        data = scraper.scrape_requests(asset, today)
-
-        if not data: # Lista vazia. Não há notícias para traduzir
-            continue
-
-        for d in data:
-            if asset not in d['headline'].lower(): # Nome do ativo não está na manchete
-                headline, body = translator.translate_by_CLI("", d['body'])
-            else:
-                headline, body = translator.translate_by_CLI(d['headline'], d['body'])
-            print(headline, body)
 
 end_time = time.time()
-print(f"Execução demorou {end_time - start_time}s")
-"""
+driver.close()
+print(f'Execuçao demorou {end_time - start_time}s')
 
