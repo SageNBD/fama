@@ -14,13 +14,6 @@ class Scraper:
 
     def __init__(self):
         self.page_sources = []
-
-        """
-        driver.get(f"https://google.com/search?q=quantamental&source=lnms&tbm=nws")
-        tools = driver.find_element_by_id("hdtb-tls")
-        tools.click()
-        """
-
         self.agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0'
         self.header = { 'User-Agent': self.agent }
 
@@ -109,17 +102,10 @@ class Scraper:
         for page_num, page_source in enumerate(self.page_sources):
             soup = BeautifulSoup(page_source, 'lxml')
 
-            #noticias = soup.find_all("div", {"class": "g"})
             noticias = soup.find_all("div", {"class": "hI5pFf"})
             for noticia in noticias:
                 news_data = {}
             
-                """
-                headline = noticia.find("a", {"class": "l lLrAF"}).text 
-                source = noticia.find("span", {"class": "xQ82C e8fRJf"}).text 
-                body = noticia.find("div", {"class": "st"}).text
-                """
-
                 headline = noticia.find("div", {"class": "JheGif jBgGLd"}).text
                 source = noticia.find("div", {"class": "XTjFC WF4CUc"}).text
                 body = noticia.find("div", {"class": "Y3v8qd"}).text
@@ -136,14 +122,6 @@ class Scraper:
 class Translator():
 
     def __init__(self, driver):
-        """
-        driver.execute_script('''
-            window.open('https://translate.google.com/?hl=pt-BR', '_blank')
-            '''
-        )
-        driver.switch_to.window(driver.window_handles[1])
-        """
-
         driver.get('https://translate.google.com/?hl=pt-BR')
         time.sleep(1.0)
 
@@ -219,55 +197,50 @@ class Translator():
 
         return (headline, body)
         
-# Class Setup
-driver = webdriver.Firefox()
-scraper = Scraper()
-translator = Translator(driver)
+if __name__ == "__main__":
+    # Class Setup
+    driver = webdriver.Firefox()
+    scraper = Scraper()
+    translator = Translator(driver)
 
-# MongoDB Setup
-client = MongoClient('localhost', 27017)
-db = client.fama
+    # MongoDB Setup
+    client = MongoClient('localhost', 27017)
+    db = client.fama
 
-# news = db.test_collection
-assets = ['itau', 'ambev', 'petrobras']
+    # news = db.test_collection
+    assets = ['itau', 'ambev', 'petrobras']
 
-asset_collection = {} # Create collection for each asset
-for asset in assets:
-    asset_collection[asset] = db[asset]
-
-today = datetime.datetime(2019, 4, 9) # Mudar a janela de tempo
-#end_date = datetime.datetime(2018, 7, 17)
-end_date = datetime.datetime(2020, 1, 1)
-total_days = (end_date - today).days
-
-start_time = time.time()
-for i in range(total_days):
-    days_left = (end_date - today).days
-    progress = ((i + 1) / (total_days * 1.0)) * 100
-
-    print(f"Today is {today.strftime('%d/%m/%Y')}. There are {days_left} days left")
-    print(f"Progress: {progress}%")
-
-    #scraper.set_date(today.strftime('%m/%d/%Y'))
+    asset_collection = {} # Create collection for each asset
     for asset in assets:
-        """
-        scraper.scrape(driver, asset, today.strftime('%m/%d/%Y'))
-        data = scraper.extract_headlines(today)
-        """
-        data = scraper.scrape_requests(asset, today)
+        asset_collection[asset] = db[asset]
 
-        if not data: # Lista vazia. Não há notícias para traduzir
-            print('didnt find any data')
-            continue
+    today = datetime.datetime(2019, 4, 9) # Mudar a janela de tempo
+    end_date = datetime.datetime(2020, 1, 1)
+    total_days = (end_date - today).days
 
-        for d in data: # Traduz a manchete
-            translator.translate(d)
+    start_time = time.time()
+    for i in range(total_days):
+        days_left = (end_date - today).days
+        progress = ((i + 1) / (total_days * 1.0)) * 100
 
-        asset_collection[asset].insert_many(data)
+        print(f"Today is {today.strftime('%d/%m/%Y')}. There are {days_left} days left")
+        print(f"Progress: {progress}%")
 
-    today += datetime.timedelta(days=1)
+        for asset in assets:
+            data = scraper.scrape_requests(asset, today)
 
-end_time = time.time()
-driver.close()
-print(f'Execuçao demorou {end_time - start_time}s')
+            if not data: # Lista vazia. Não há notícias para traduzir
+                print('didnt find any data')
+                continue
+
+            for d in data: # Traduz a manchete
+                translator.translate(d)
+
+            asset_collection[asset].insert_many(data)
+
+        today += datetime.timedelta(days=1)
+
+    end_time = time.time()
+    driver.close()
+    print(f'Execuçao demorou {end_time - start_time}s')
 
