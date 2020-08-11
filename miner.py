@@ -196,6 +196,24 @@ class Translator():
         output = subprocess.check_output(['trans', '-b', body])
 
         return (headline, body)
+
+"""
+    Sem paralelismo:
+    1: 100% 
+    2:
+    3:
+    4:
+    
+    total = t
+
+    Com paralelismo:
+    1: 25%
+    2: 25
+    3: 25
+    4: 25
+
+    t / 4
+"""
         
 if __name__ == "__main__":
     # Class Setup

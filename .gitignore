@@ -1,4 +1,5 @@
 *.log
 *.dat
 *.html
+*.ipynb
 dump/
