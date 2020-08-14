@@ -42,6 +42,7 @@ def get_trends(assets):
     pytrends = TrendReq(hl='pt-BR')
     pytrends.build_payload(kw_list=assets, 
                             timeframe='2016-01-01 2019-12-31',
+                            geo='BR',
                             cat=7)
     df_trends = pytrends.interest_over_time()
     
@@ -49,7 +50,7 @@ def get_trends(assets):
 
 def populate_dictionary(sia):
     print('Reading data from Excel sheet...')
-    df_dictionary = pd.read_excel('dictionary.xlsx').filter(
+    df_dictionary = pd.read_excel('sheets/dictionary.xlsx').filter(
                                 ['Word', 'Negative_Unity', 'Positive_Unity'])
     #new_words = {}
     print('Creating dictionary...', end=' ')
@@ -146,6 +147,11 @@ trend_df = get_trends(assets)
 
 df = merge_dataframes(scores_df, hist_data, trend_df)
 
+for asset in assets:
+    df[asset].to_csv(f'dados_{asset}.csv')
+    df[asset].to_excel(f'dados_{asset}.xlsx', engine='xlsxwriter')
+
+
 df_pred_sent = {}
 df_corr_sent = {}
 
@@ -161,9 +167,9 @@ for asset in assets:
     df_pred_trend[asset].plot(x=asset, y="Returns", style='o', title=asset)  
     df_corr_trend[asset] = df_pred_sent[asset].corr()
  
-# df_pred_final = {}
-# df_corr2 = {}
-# for asset in assets:
-#     df_pred_final[asset] = df_pred[asset][(df_pred[asset]['Pred Score'] >= 0.5) |
-#                                 (df_pred[asset]['Pred Score'] <= -0.5)]
-#     df_corr2[asset] = df_pred_final[asset].corr()
+df_pred_final = {}
+df_corr2 = {}
+for asset in assets:
+    df_pred_final[asset] = df_pred_sent[asset][(df_pred_sent[asset]['Pred Score'] >= 0.2) |
+                                (df_pred_sent[asset]['Pred Score'] <= -0.2)]
+    df_corr2[asset] = df_pred_final[asset].corr()
