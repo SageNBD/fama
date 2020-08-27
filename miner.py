@@ -196,24 +196,6 @@ class Translator():
         output = subprocess.check_output(['trans', '-b', body])
 
         return (headline, body)
-
-"""
-    Sem paralelismo:
-    1: 100% 
-    2:
-    3:
-    4:
-    
-    total = t
-
-    Com paralelismo:
-    1: 25%
-    2: 25
-    3: 25
-    4: 25
-
-    t / 4
-"""
         
 if __name__ == "__main__":
     # Class Setup
@@ -248,7 +230,7 @@ if __name__ == "__main__":
             data = scraper.scrape_requests(asset, today)
 
             if not data: # Lista vazia. Não há notícias para traduzir
-                print('didnt find any data')
+                print(f"didnt find any data for {asset} on {today.strftime('%d/%m/%Y')}")
                 continue
 
             for d in data: # Traduz a manchete
