@@ -1,0 +1,9 @@
+{
+    "python.pythonPath": "C:\\ProgramData\\Anaconda3\\python.exe",
+    "vim.useCtrlKeys": false,
+    "launch": {
+
+        "configurations": [],
+        "compounds": []
+    }
+}
