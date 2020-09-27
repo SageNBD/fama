@@ -4,4 +4,4 @@
 *.ipynb
 *.png
 dump/
-*.vscode/
+.vscode/
